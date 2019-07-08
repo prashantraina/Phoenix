@@ -102,13 +102,13 @@ def configure(conf):
         conf.env.PYTHON = conf.options.python
     conf.load('python')
     conf.check_python_version(minver=(2,7,0))
-    if isWindows:
+    #if isWindows:
         # Search for the Python headers without doing some stuff that could
         # incorrectly fail on Windows. See my_check_python_headers below.
         # TODO: Check if it can/should be used on other platforms too.
-        conf.my_check_python_headers()
-    else:
-        conf.check_python_headers(features='pyext')
+    conf.my_check_python_headers()
+    #else:
+        #conf.check_python_headers(features='pyext')
 
     # fetch and save the debug options
     conf.env.debug = conf.options.debug
@@ -407,7 +407,7 @@ def my_check_python_headers(conf):
         conf.fatal("Python development headers not found (-v for details).")
 
     vals = ['%s = %r' % (x, y) for (x, y) in zip(v, lst)]
-    conf.to_log("Configuration returned from %r:\n%r\n" % (pybin, '\n'.join(vals)))
+    conf.to_log("Configuration RETURNED from %r:\n%r\n" % (pybin, '\n'.join(vals)))
 
     dct = dict(zip(v, lst))
     x = 'MACOSX_DEPLOYMENT_TARGET'
@@ -416,12 +416,18 @@ def my_check_python_headers(conf):
 
     env['pyext_PATTERN'] = '%s' + dct['SO'] # not a mistake
 
+    conf.to_log('\nABOUT TO CHECK PYTHON!!!! ---- 1\n')
+
     # Check for python libraries for embedding
     all_flags = dct['LDFLAGS'] + ' ' + dct['CFLAGS']
     conf.parse_flags(all_flags, 'PYEMBED')
 
+    conf.to_log('\nABOUT TO CHECK PYTHON!!!! ---- 2\n')
+
     all_flags = dct['LDFLAGS'] + ' ' + dct['LDSHARED'] + ' ' + dct['CFLAGS']
     conf.parse_flags(all_flags, 'PYEXT')
+
+    conf.to_log('\nABOUT TO CHECK PYTHON!!!! ---- 3\n')
 
     if isWindows:
         libname = 'python' + conf.env['PYTHON_VERSION'].replace('.', '')
@@ -439,28 +445,28 @@ def my_check_python_headers(conf):
 
     else:
         result = None
-        for name in ('python' + env['PYTHON_VERSION'], 'python' + env['PYTHON_VERSION'].replace('.', '')):
+        for name in ('python' + env['PYTHON_VERSION'], 'python' + env['PYTHON_VERSION'] + 'm', 'python' + env['PYTHON_VERSION'].replace('.', '')):
 
             # LIBPATH_PYEMBED is already set; see if it works.
             if not result and env['LIBPATH_PYEMBED']:
                 path = env['LIBPATH_PYEMBED']
-                conf.to_log("\n\n# Trying default LIBPATH_PYEMBED: %r\n" % path)
+                conf.to_log("\n\n# Trying default LIBPATH_PYEMBED: %r\nname:%s" % (path, name))
                 result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in LIBPATH_PYEMBED' % name)
 
             if not result and dct['LIBDIR']:
                 path = [dct['LIBDIR']]
-                conf.to_log("\n\n# try again with -L$python_LIBDIR: %r\n" % path)
+                conf.to_log("\n\n# try again with -L$python_LIBDIR: %r\nname:%s" % (path, name))
                 result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in LIBDIR' % name)
 
-            if not result and dct['LIBPL']:
-                path = [dct['LIBPL']]
-                conf.to_log("\n\n# try again with -L$python_LIBPL (some systems don't install the python library in $prefix/lib)\n")
-                result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in python_LIBPL' % name)
+            #if not result and dct['LIBPL']:
+            #    path = [dct['LIBPL']]
+            #    conf.to_log("\n\n# try again with -L$python_LIBPL (some systems don't install the python library in $prefix/lib)\n")
+            #    result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in python_LIBPL' % name)
 
-            if not result:
-                path = [os.path.join(dct['prefix'], "libs")]
-                conf.to_log("\n\n# try again with -L$prefix/libs, and pythonXY name rather than pythonX.Y (win32)\n")
-                result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in $prefix/libs' % name)
+            #if not result:
+            #    path = [os.path.join(dct['prefix'], "libs")]
+            #    conf.to_log("\n\n# try again with -L$prefix/libs, and pythonXY name rather than pythonX.Y (win32)\n")
+            #    result = conf.check(lib=name, uselib='PYEMBED', libpath=path, mandatory=False, msg='Checking for library %s in $prefix/libs' % name)
 
             if result:
                 break # do not forget to set LIBPATH_PYEMBED
